@@ -1,12 +1,9 @@
 class Row(object):
     """Represents one row of the airplane"""
-    def __init__(self):
+    def __init__(self, number):
         self.next_row = None
         self.occupied = False
-
-
-def test():
-    print('hello')
+        self.number = number
 
 
 class Passenger(object):
@@ -24,7 +21,7 @@ class Passenger(object):
 
     def update(self):
         if not self.seated:
-            if self.assigned_seat == self.current_row.index:
+            if self.assigned_seat == self.current_row.number:
                 if self.luggage_time == 0:
                     self.seated = True
                     self.current_row.occupied = False
@@ -46,16 +43,18 @@ def iterate(queue):
 
 
 def instantiate_plane(num_rows):
-    rows = [Row()] * num_rows
+    # Create a dummy row for the plane
+    rows = [Row(i) for i in range(num_rows + 1)]
     for i in range(len(rows) - 1):
         rows[i].next_row = rows[i + 1]
-        rows[i].number = i
     return rows
 
 
 # Runs a simulation for a given plane and passenger
 # configuration
 def simulation(queue, plane):
+    for passenger in queue:
+        passenger.current_row = plane[0]
     time_step = 0
     while any(not passenger.seated for passenger in queue):
         iterate(queue)
