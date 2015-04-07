@@ -10,8 +10,9 @@ class Passenger(object):
     """Represents a passenger and the way they
     move through the plane
 
-    Arguments:
-    assigned_seat: an (x, y) tuple describing row and seat number"""
+    Attributes:
+    assigned_seat: an int describing row number
+    """
     def __init__(self, assigned_seat, luggage_time):
         self.assigned_seat = assigned_seat
         self.luggage_time = luggage_time
@@ -37,11 +38,16 @@ class Passenger(object):
                     self.current_row.occupied = True
 
 
+# Runs a single iteration of the simulation,
+# updating each passenger in order from the front
+# of the queue to the back of the queue.
 def iterate(queue):
     for passenger in queue:
         passenger.update()
 
 
+# Creates a plane with a given number of rows,
+# and ties 
 def instantiate_plane(num_rows):
     # Create a dummy row for the plane
     rows = [Row(i) for i in range(num_rows + 1)]

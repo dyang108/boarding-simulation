@@ -3,17 +3,15 @@ from boarding_simulator import *
 from random import shuffle
 from collections import deque
 
-# Thao: Haven't tested codes yet
-
 
 def instantiate_queue(seat_list, luggage_time):
     """
     Convert a list of seat numbers to a queue
     """
-    return [Passenger(i, luggage_time) for i in seatList]
+    return [Passenger(i, luggage_time) for i in seat_list]
 
 
-def random_seat(seat_per_row, num_rows):
+def random_seat(num_rows, seat_per_row):
     possible_seats = list(chain(*[[i] * seat_per_row
                           for i in range(1, num_rows + 1)]))
     shuffle(possible_seats)
@@ -25,8 +23,8 @@ def back_to_front(num_rows, seat_per_row, num_groups):
     Create strategy for Back to Front boarding strategy
     """
     max_rows_per_group = num_rows / num_groups
-    possible_seats = [list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row \
-                            for k in range(1, num_rows + 1, max_rows_per_group)]
+    possible_seats = [list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row
+                      for k in range(1, num_rows + 1, max_rows_per_group)]
     for group in possible_seats:
         shuffle(group)
     possible_seats.reverse()
@@ -38,8 +36,8 @@ def front_to_back(num_rows, seat_per_row, num_groups):
     Create strategy for Back to Front boarding strategy
     """
     max_rows_per_group = num_rows / num_groups
-    possible_seats = [list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row \
-                            for k in range(1, num_rows + 1, max_rows_per_group)]
+    possible_seats = [list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row
+                      for k in range(1, num_rows + 1, max_rows_per_group)]
     for group in possible_seats:
         shuffle(group)
     return list(chain(*possible_seats))
@@ -53,9 +51,12 @@ def rotating_zone(num_rows, seat_per_row, num_groups):
     # groups = [[[i] * seats_per_row for i in range(k, k + max_rows_per_groups - 1)] \
     # for k in range(1, num_rows, max_rows_per_group)]
     # group_orders = range(num_groups, 0)
-    unordered_groups = deque([list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row \
-                            for k in range(1, num_rows + 1, max_rows_per_group)])
+    unordered_groups = deque([list(range(k, min(num_rows + 1, k + max_rows_per_group))) * seat_per_row
+                             for k in range(1, num_rows + 1, max_rows_per_group)])
     groups = list()
+    # Using while True instead of while unordered_groups
+    # since we're not sure whether we're going to have an
+    # even or odd number of seats
     while True:
         try:
             groups.append(unordered_groups.pop())
@@ -83,8 +84,64 @@ def outside_in(num_rows, seat_per_row):
     return list(chain(*boarding_group))
 
 
-if __name__ == '__main__':
+# Seats per row is across the entire row. Gotta account for that, especially for
+# the odd case.
+def reverse_pyramid(num_rows, seats_per_row, num_groups):
+    seats = num_rows * (seats_per_row / 2)
+
+    # A rather clunky integer ceiling function.
+    size_of_group = seats / num_groups + seats % num_groups
+    # This is for one side of the plane
+    # First case is working.
+    if seats_per_row % 2 == 0:
+        seat_order = list(range(num_rows, 0, -1)) * (seats_per_row / 2)
+        # Chunk the list into the groups, and double each of the chunks in place
+        # extend to both sides of the plane after creating the chunks just based on the one side of the plane.
+        boarding_groups = [seat_order[i:i + size_of_group] * 2 for i in range(0, len(seat_order), size_of_group)]
+    # else:
+    #     # This case isn't working. Somehow the boarding_groups is getting turned into an int.
+    #     # Start with the side of the plane with more columns
+    #     seat_order = list(range(num_rows, 0, -1)) * (seats_per_row / 2 + 1)
+    #     # Chunk it as before sorting the doubling, but only for larger side
+    #     one_side_boarding_groups = [seat_order[i:i + size_of_group] for i in range(0, len(seat_order), size_of_group)]
+    #     # Double up on one side, up to the awkward group (which we're assuming there will be)
+    #     seats_in_smaller_column = (num_rows * (seats_per_row / 2))
+    #     num_doubled_boarding_groups = seats_in_smaller_column % size_of_group # The behavior of py2's / is screwing with me
+    #     boarding_groups = [one_side_boarding_groups[i] * 2 for i in range(num_doubled_boarding_groups)]
+    #     # Add the funky split boarding group
+    #     # Gah. This code is getting janky as hell.
+    #     edge_case_seats = seats_in_smaller_column % size_of_group
+    #     boarding_groups += [one_side_boarding_groups[num_doubled_boarding_groups][:edge_case_seats + 1]] * 2
+    #     boarding_groups += one_side_boarding_groups[num_doubled_boarding_groups + 1:]
+    #     # welp, let's try that.
+    else:
+        # Specifically For the smallest plane (3 seats per row, 18 rows)
+        double_seat_order = list(range(num_rows, 0, -1)) * ((seats_per_row + 1) / 2)
+        single_seat_order = list(range(num_rows, 0, -1))
+        boarding_groups = [double_seat_order[i:i + size_of_group] + single_seat_order[i:i+ size_of_group] \
+        for i in range(0, len(double_seat_order), size_of_group)]
+
+    # Shuffle each of the chunks
+    shuffle_groups(boarding_groups)
+
+    return list(chain(*boarding_groups))
+    # return boarding_groups
+
+
+def staggered_reverse_pyramid(num_rows, seats_per_row):
     pass
 
 
-    
+def block_boarding(num_rows, seats_per_row):
+    pass
+
+
+def shuffle_groups(boarding_groups):
+    for group in boarding_groups:
+        shuffle(group)
+
+
+if __name__ == '__main__':
+    queue = reverse_pyramid(18, 3, 5)
+    print(queue)
+    #assert len(queue) == 10 * 3
