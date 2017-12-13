@@ -1,3 +1,4 @@
+# author: Derick Yang & Tanner Stirrat
 import time
 from variables import *
 
@@ -5,52 +6,50 @@ class Row(object):
     """Represents one row of the airplane"""
     def __init__(self, number):
         self.next_row = None
-        self.aisle_occupied = None
+        self.aisle_occupied = False
         self.seats_occupied = {
-            "a": None,
-            "b": None,
-            "c": None,
-            "d": None,
-            "e": None,
-            "f": None
+            "a": False,
+            "b": False,
+            "c": False,
+            "d": False,
+            "e": False,
+            "f": False
         }
         self.number = number
 
-    # perhaps we want to add an "unbuckling time" for people who are blocking
-    # see notebook for why 3 and 5
     def block_time_for_seat(self, seat_letter):
         # we can update the seat occupied here because no one else will get to a seat in this row until after this person sits.
         if seat_letter == "c" or seat_letter == "d":
             return no_block
         elif seat_letter == "b":
             if self.seats_occupied["c"]:
-                return side_move_ticks * c_block_b
+                return side_move_ticks * c_block_b()
             else:
                 return no_block
         elif seat_letter == "e":
             if self.seats_occupied["d"]:
-                return side_move_ticks * c_block_b
+                return side_move_ticks * c_block_b()
             else:
                 return no_block
         elif seat_letter == "a":
             # should be similar if just b or both b and c occupied
             if self.seats_occupied["b"]:
                 if self.seats_occupied["c"]:
-                    return side_move_ticks * bc_block_a
+                    return side_move_ticks * bc_block_a()
                 else:
-                    return side_move_ticks * b_block_a
+                    return side_move_ticks * b_block_a()
             elif self.seats_occupied["c"]:
-                return side_move_ticks * c_block_b
+                return side_move_ticks * c_block_b()
             else:
                 return no_block
         elif seat_letter == "f":
             if self.seats_occupied["e"]:
                 if self.seats_occupied["d"]:
-                    return side_move_ticks * bc_block_a
+                    return side_move_ticks * bc_block_a()
                 else:
-                    return side_move_ticks * b_block_a
+                    return side_move_ticks * b_block_a()
             elif self.seats_occupied["d"]:
-                return side_move_ticks * c_block_b
+                return side_move_ticks * c_block_b()
             else:
                 return no_block
 
@@ -71,6 +70,7 @@ class Passenger(object):
         self.reached_row = False
 
     def update(self):
+        # updates the location of a single passenger in the queue
         if not self.seated:
             if self.assigned_seat[0] == self.current_row.number:
                 if not self.reached_row:
@@ -79,22 +79,22 @@ class Passenger(object):
                 if self.luggage_time <= 0:
                     if self.wait_in_aisle_time <= 0:
                         self.seated = True
-                        self.current_row.aisle_occupied = None
+                        self.current_row.aisle_occupied = False
                         self.current_row.seats_occupied[self.assigned_seat[1]] = True
                     else:
-                        if self.wait_in_aisle_time > 2 and self.current_row.next_row is not None and self.current_row.next_row.aisle_occupied is not None:
+                        if self.wait_in_aisle_time > 2 and self.current_row.next_row is not None and self.current_row.next_row.aisle_occupied:
                             self.wait_in_aisle_time += 1
                         self.wait_in_aisle_time -= 1
                 else:
                     self.luggage_time -= 1
 
             else:
-                if self.current_row.next_row.aisle_occupied is not None:
+                if self.current_row.next_row.aisle_occupied:
                     pass
                 else:
-                    self.current_row.aisle_occupied = None
+                    self.current_row.aisle_occupied = False
                     self.current_row = self.current_row.next_row
-                    self.current_row.aisle_occupied = self
+                    self.current_row.aisle_occupied = True
 
 
 # Runs a single iteration of the simulation,
@@ -115,7 +115,7 @@ def instantiate_plane(num_rows):
     return rows
 
 def disp_x(occupant):
-    return "o" if occupant is not None else " "
+    return "o" if occupant else " "
 
 def print_plane(plane, tick):
     print "Plane at tick " + str(tick)
@@ -137,10 +137,3 @@ def simulation(queue, plane, verbose):
             print_plane(plane, tick)
         tick += 1
     return tick
-
-
-def main():
-    pass
-
-if __name__ == '__main__':
-    main()
